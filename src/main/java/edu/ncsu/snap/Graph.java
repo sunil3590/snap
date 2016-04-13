@@ -17,7 +17,7 @@ public class Graph {
 	List<Set<Integer>> clusters;
 	int nEdgeFeatures;
 	Map<Pair<Integer, Integer>, Map<Integer, List<Integer>>> edgeFeatures;
-	int nNodeFeatures = 0;
+	int nNodeFeatures;
 	
 	public Graph(){
 		
