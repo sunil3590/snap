@@ -34,6 +34,7 @@ public class Snap {
 		// learning rate
 		double increment = 1.0 / (1.0 * 1);
 
+		// TODO : gradient ascent
 		for (int iteration = 0; iteration < gradientReps; iteration++) {
 			for (int i = 0; i < nTheta; i++) {
 

@@ -5,7 +5,7 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO : create graph object using input file names
 		Graph gd = new Graph();
-		gd.loadGraph();
+		
 		
 		// TODO : create the node to be added
 		Node node = new Node();
