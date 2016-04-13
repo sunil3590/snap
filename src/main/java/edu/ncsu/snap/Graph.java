@@ -17,6 +17,7 @@ public class Graph {
 	List<Set<Integer>> clusters;
 	int nEdgeFeatures;
 	Map<Pair<Integer, Integer>, Map<Integer, List<Integer>>> edgeFeatures;
+	int nNodeFeatures = 0;
 	
 	public Graph(){
 		
@@ -32,8 +33,6 @@ public class Graph {
 		try{
 			
 			Util util = new Util();
-			
-			int nNodeFeatures = 0;
 			
 			Map<Integer, List<Integer>> nodeFeatures = new HashMap<Integer, List<Integer>>();
 			Map<Integer, List<Integer>> simFeatures = new HashMap<Integer, List<Integer>>();
