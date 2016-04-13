@@ -1,36 +1,30 @@
 package edu.ncsu.snap;
 
+import java.util.ArrayList;
+import java.util.Set;
+
 public class Snap {
 
 	// TODO : configurable parameters
 	static int gradientReps = 50;
-	
-	private static class BigTheta {
-
-		double[] theta;
-		double[] alpha;
-
-		BigTheta(int nTheta, int k) {
-			theta = new double[nTheta];
-			alpha = new double[k];
-		}
-	}
 
 	static void addNode(Graph gd, Node node) {
-		// TODO : use train to add the node to gd
-		train(gd);
+		// compute the theta and alpha values for the given graph and circles
+		BigTheta bigTheta = train(gd);
+		
+		// TODO : add the node to gd based on log-likelihood
 	}
 
 	// co ordinate ascent to find theta and alpha
 	private static BigTheta train(Graph gd) {
 
-		// TODO : to be taken from Graph
-		int k = gd.k; //  TODO : based on gd
-		int nNodeFeatures = gd.nNodeFeatures; // TODO based on gd
-		int nEdgeFeatures = 1 + nNodeFeatures;
+		// graph parameters
+		int k = gd.k;
+		int nNodeFeatures = gd.nNodeFeatures;
+		int nEdgeFeatures = gd.nEdgeFeatures;
 
-		int nTheta = nEdgeFeatures;
 		// this is the output
+		int nTheta = nEdgeFeatures;
 		BigTheta bigTheta = new BigTheta(nTheta, k);
 
 		double l1 = 0; // gain
@@ -47,5 +41,16 @@ public class Snap {
 		}
 
 		return bigTheta;
+	}
+	
+	private static double logLikelihood(BigTheta bigTheta, ArrayList<Set<Integer>> chat, Graph gd) {
+		
+		double ll = 0.0;
+		
+		int k = chat.size();
+		int n = gd.nNodes;
+		// chat.get(i).contains(n)
+		
+		return ll;
 	}
 }
