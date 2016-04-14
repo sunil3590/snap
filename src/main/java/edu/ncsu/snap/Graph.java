@@ -222,13 +222,13 @@ public class Graph implements Cloneable {
 				edgeSet.remove(pair);
 		}*/
 		
-		Iterator<Pair<Integer, Integer>> it2 = edgeFeatures.keySet().iterator();
+		Iterator<Map.Entry<Pair<Integer,Integer>, Map<Integer, Integer>>> it2 = edgeFeatures.entrySet().iterator();
 		
 		while(it2.hasNext()){
-			Pair<Integer, Integer> pair = it2.next();
-			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid){
-				node.edFeatures.put(pair, edgeFeatures.get(pair));
-				edgeFeatures.remove(pair);	
+			Map.Entry<Pair<Integer,Integer>, Map<Integer, Integer>> item = (Map.Entry<Pair<Integer,Integer>, Map<Integer, Integer>>)it2.next();
+			if(item.getKey().getFirst() == nodeid || item.getKey().getSecond() == nodeid){
+				node.edFeatures.put(item.getKey(), edgeFeatures.get(item.getKey()));
+				it2.remove();
 			}
 		}
 		
@@ -261,6 +261,8 @@ public class Graph implements Cloneable {
 		
 		boolean status = graph.loadGraphData(nodeFeatureFile, selfFeatureFile, 
 				clusterFile, edgeFile, which, directed);
+		
+		graph.removeNode(0);
 		
 		if (status == false) {
 			System.out.println("Could not build graph");
