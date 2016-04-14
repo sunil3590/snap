@@ -79,7 +79,7 @@ public class Snap {
 			// TODO :  should we do this?
 			// Update the latent variables (cluster assignments) in a random order.
 			
-			// loglikelihood before startig gradiant ascent
+			// loglikelihood before starting gradient ascent
 			ll_prev = logLikelihood(bigTheta, chat, gd);
 
 			// gradient ascent
@@ -97,8 +97,8 @@ public class Snap {
 					bigTheta.get(k).alpha += increment * dlda[k];
 				}
 				
-				// just to to show its running
-				System.out.println(".");
+				// just to show something is happening
+				System.out.print(".");
 
 				// compute new log likelihood
 				ll = logLikelihood(bigTheta, chat, gd);
@@ -120,6 +120,7 @@ public class Snap {
 				// keep the new likelihood
 				ll_prev = ll;
 			}
+			System.out.println("");
 		}
 
 		return bigTheta;
@@ -155,5 +156,34 @@ public class Snap {
 		}
 
 		return ll;
+	}
+	
+	public static void main(String[] args) {
+		
+		// input data to be used for analysis
+		String filePrefix = "./data/facebook/698"; //
+		String nodeFeatureFile = filePrefix + ".feat"; // TODO
+		String selfFeatureFile = filePrefix + ".egofeat";
+		String clusterFile = filePrefix + ".circles";
+		String edgeFile = filePrefix + ".edges";
+		String which = "FRIENDFEATURES";
+		boolean directed = false;
+		
+		// create graph object using input file names
+		Graph gd = new Graph();
+		boolean status = gd.loadGraphData(nodeFeatureFile, selfFeatureFile, 
+				clusterFile, edgeFile, which, directed);
+		if (status == false) {
+			System.out.println("Could not build graph");
+			return;
+		}
+		
+		// TODO : create the node to be added
+		Node node = new Node();
+		
+		// TODO : run SNAP algo to add a new node to the existing clusters
+		Snap.addNode(gd, node);
+		
+		return;
 	}
 }

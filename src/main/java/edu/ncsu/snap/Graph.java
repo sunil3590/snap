@@ -31,7 +31,7 @@ public class Graph {
 
 	}
 
-	public void loadGraphData(String nodeFeatureFile, String selfFeatureFile, String clusterFile, String edgeFile,
+	public boolean loadGraphData(String nodeFeatureFile, String selfFeatureFile, String clusterFile, String edgeFile,
 			String which, boolean directed) {
 		try {
 
@@ -47,7 +47,7 @@ public class Graph {
 			File f2 = new File(nodeFeatureFile);
 			if (!f2.exists()) {
 				System.out.println("Couldn't open " + nodeFeatureFile);
-				return;
+				return false;
 			}
 
 			int i = 0;
@@ -80,7 +80,7 @@ public class Graph {
 			if (nNodes > 1200) {
 				System.out.println("This code will probably run out of memory with more than 1000 nodes");
 				sc.close();
-				return;
+				return false;
 			}
 
 			f = new File(selfFeatureFile);
@@ -167,9 +167,31 @@ public class Graph {
 			sc.close();
 
 		} catch (Exception ex) {
-
+			System.out.println(ex);
+			return false;
 		}
-
+		
+		return true;
 	}
 
+	public static void main(String[] args) {
+		
+		// input data to be used for analysis
+		String filePrefix = "./data/facebook/698";
+		String nodeFeatureFile = filePrefix + ".feat";
+		String selfFeatureFile = filePrefix + ".egofeat";
+		String clusterFile = filePrefix + ".circles";
+		String edgeFile = filePrefix + ".edges";
+		String which = "FRIENDFEATURES";
+		boolean directed = false;
+		
+		// create graph object using input file names
+		Graph gd = new Graph();
+		boolean status = gd.loadGraphData(nodeFeatureFile, selfFeatureFile, 
+				clusterFile, edgeFile, which, directed);
+		if (status == false) {
+			System.out.println("Could not build graph");
+			return;
+		}
+	}
 }
