@@ -7,13 +7,19 @@ import java.util.Map;
 
 public class Util {
 
-	public static Map<Integer, Integer> makeSparse(List<List<Integer>> list, int[] d, int n) {
-		Map<Integer, Integer> res = new HashMap<Integer, Integer>();
-
+	public Map<Integer, List<Integer>> makeSparse(List<List<Integer>> list, int[] d, int n){
+		Map<Integer, List<Integer>> res = new HashMap<Integer, List<Integer>>();
+		
+		res.put(0, list.get(0));
+		for(int i = 1; i < d.length; i++){
+			if(d[i] > 0){
+				res.put(i, list.get(d[i]));
+			}
+		}
 		return res;
 	}
 
-	public static List<Integer> diff(List<Integer> f1, List<Integer> f2, int D) {
+	public List<Integer> diff(List<Integer> f1, List<Integer> f2, int D) {
 		List<Integer> res = new ArrayList<Integer>();
 
 		for (int i = 0; i < D; i++) {
