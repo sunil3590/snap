@@ -17,22 +17,24 @@ public class Graph {
 	Set<Pair<Integer, Integer>> edgeSet;
 	int nNodeFeatures;
 	int nEdgeFeatures;
-	Map<Pair<Integer, Integer>, Map<Integer, List<Integer>>> edgeFeatures;
+	Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures;
 	List<Set<Integer>> clusters;
+	boolean directed;
 	
 	public Graph() {
 
 		nodeIndex = new HashMap<String, Integer>();
 		indexNode = new HashMap<Integer, String>();
 		edgeSet = new HashSet<Pair<Integer, Integer>>();
-		edgeFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, List<Integer>>>();
+		edgeFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, Integer>>();
 		clusters = new ArrayList<Set<Integer>>();
 	}
 
-	public boolean LoadGraphData(String nodeFeatureFile, String selfFeatureFile,
+	public boolean loadGraphData(String nodeFeatureFile, String selfFeatureFile,
 			String clusterFile, String edgeFile, String which, boolean directed){
 		try{
 			
+			this.directed = directed;
 			Util util = new Util();
 			
 			Map<Integer, List<Integer>> nodeFeatures = new HashMap<Integer, List<Integer>>();
@@ -125,40 +127,46 @@ public class Graph {
 			}
 			
 			for(int m = 0; m < nNodes; m++){
+				int mn = 0;
+				mn++;
 				for(int n = (directed? 0 : m+1); n < nNodes; n++){
 					if(m == n)
 						continue;
+					int ind = 0;
 					int[] d = new int[nEdgeFeatures];
-					int l = 0;
-					List<List<Integer>> list = new ArrayList<List<Integer>>(); 
-					d[0] = l;
-					List<Integer> first = new ArrayList<Integer>();
-					first.add(1);
-					list.add(first);
-					int k = 0;
 					
-					if(which.equals("EGOFEATURES")){
-						list.add(util.diff(simFeatures.get(m),simFeatures.get(n), nNodeFeatures));
-						l++;
-						k++;
-						d[k] = l;
-					} else if(which.equals("FRIENDFEATURES")){
-						util.diff(nodeFeatures.get(m), nodeFeatures.get(n), nNodeFeatures);
-						l++;
-						k++;
-						d[k] = l;
-					} else {
-						list.add(util.diff(simFeatures.get(m),simFeatures.get(n), nNodeFeatures));
-						l++;
-						k++;
-						d[k] = l;
-						util.diff(nodeFeatures.get(m), nodeFeatures.get(n), nNodeFeatures);
-						l++;
-						k++;
-						d[k+nNodeFeatures] = l;
+					for(int o = 0; o < d.length; o++){
+						d[o] = -1;
 					}
 					
-					edgeFeatures.put(new Pair<Integer, Integer>(m,n), util.makeSparse(list, d, nEdgeFeatures));
+					d[0] = 1;
+					ind++;
+					
+					List<Integer> list;
+					List<Integer> list2 = new ArrayList<Integer>();
+					
+					if(which.equals("EGOFEATURES")){
+						list = util.diff(simFeatures.get(m),simFeatures.get(n), nNodeFeatures);
+						
+					} else if(which.equals("FRIENDFEATURES")){
+						list = util.diff(nodeFeatures.get(m), nodeFeatures.get(n), nNodeFeatures);
+					} else {
+						list = util.diff(simFeatures.get(m),simFeatures.get(n), nNodeFeatures);
+						list2 = util.diff(nodeFeatures.get(m), nodeFeatures.get(n), nNodeFeatures);
+					}
+					
+					for(int val : list){
+						d[ind] = val;
+						ind++;
+					}
+					
+					ind += nNodeFeatures;
+					
+					for(int val : list2){
+							d[ind] = val;
+					}
+					
+					edgeFeatures.put(new Pair<Integer, Integer>(m,n), util.makeSparse(d, nEdgeFeatures));
 				}
 			}
 			
@@ -185,10 +193,49 @@ public class Graph {
 		
 	}
 	
+	public void removeNode(int nodeid){
+		
+		for(Set<Integer> set : clusters){
+			if(set.contains(nodeid))
+				set.remove(nodeid);
+		}
+		
+		for(Pair<Integer, Integer> pair : edgeSet){
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
+				edgeSet.remove(pair);
+		}
+		
+		for(Pair<Integer, Integer> pair : edgeFeatures.keySet()){
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
+				edgeFeatures.remove(pair);
+			else {
+				for(int key : edgeFeatures.get(pair).keySet()){
+					if(key == nodeid)
+						edgeFeatures.get(pair).remove(key);
+				}	
+			}
+		}
+		
+	}
+	
 	public static void main(String[] args){
 		Graph graph = new Graph();
 		
-		graph.LoadGraphData("0.feat", "0.egofeat", "0.circles", "0.edges", "EGOFEATURES", true);
+		String filePrefix = "./data/facebook/698"; //
+		String nodeFeatureFile = filePrefix + ".feat"; // TODO
+		String selfFeatureFile = filePrefix + ".egofeat";
+		String clusterFile = filePrefix + ".circles";
+		String edgeFile = filePrefix + ".edges";
+		String which = "FRIENDFEATURES";
+		boolean directed = false;
+		
+		boolean status = graph.loadGraphData(nodeFeatureFile, selfFeatureFile, 
+				clusterFile, edgeFile, which, directed);
+		
+		if (status == false) {
+			System.out.println("Could not build graph");
+			return;
+		}
 		
 		System.out.println("here");
 	}

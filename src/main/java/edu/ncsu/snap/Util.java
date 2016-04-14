@@ -7,13 +7,12 @@ import java.util.Map;
 
 public class Util {
 
-	public Map<Integer, List<Integer>> makeSparse(List<List<Integer>> list, int[] d, int n){
-		Map<Integer, List<Integer>> res = new HashMap<Integer, List<Integer>>();
+	public Map<Integer, Integer> makeSparse(int[] d, int n){
+		Map<Integer, Integer> res = new HashMap<Integer, Integer>();
 		
-		res.put(0, list.get(0));
-		for(int i = 1; i < d.length; i++){
-			if(d[i] > 0){
-				res.put(i, list.get(d[i]));
+		for(int i = 0; i < d.length; i++){
+			if(d[i] != -1){
+				res.put(i, d[i]);
 			}
 		}
 		return res;
