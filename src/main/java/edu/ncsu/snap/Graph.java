@@ -245,6 +245,8 @@ public class Graph implements Cloneable {
 			}
 		}*/
 		
+		nNodes--;
+		
 		return node;
 	}
 	

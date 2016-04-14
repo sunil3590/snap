@@ -12,28 +12,25 @@ public class Snap {
 	static int gradientReps = 50;
 	static int reps = 25;
 
-	static int whichCircle(Graph gd, int n_id) {
-		// make a copy of the full graph
-		Graph gd_removed = gd; // TODO : deep copy constructor
-
-		// remove a node // TODO : loop over gd.nNodes
-		Node node = gd_removed.removeNode(n_id);
-		List<Set<Integer>> chat_removed = gd_removed.clusters;
+	static int whichCircle(Graph gd, Node node) {
 		
 		// compute the theta and alpha values for the given graph and circles
-		List<BigTheta> bigThetas = train(gd_removed);
+		List<BigTheta> bigThetas = train(gd);
 		
-		// TODO : add the node to gd based on log-likelihood
+		// current circles
+		List<Set<Integer>> chat = gd.clusters;
+		
+		// add the node to gd based on log-likelihood
 		int c_id = 0;
 		double ll = 0.0;
 		double max_ll = 0.0;
 		for (int i = 0; i < gd.clusters.size(); i++) {
 			// add node ID to cluster i
-			List<Set<Integer>> chat = new ArrayList<Set<Integer>>(chat_removed);
-			chat.get(i).add(n_id);
+			List<Set<Integer>> chat_new = new ArrayList<Set<Integer>>(chat);
+			chat_new.get(i).add(node.nodeId);
 			
 			// TODO : not a clean way, gd already has the ground truth
-			ll = Snap.logLikelihood(bigThetas, chat, gd);
+			ll = Snap.logLikelihood(bigThetas, chat_new, gd);
 			if (ll > max_ll) {
 				c_id = i;
 			}
@@ -96,7 +93,7 @@ public class Snap {
 				}
 			}
 			
-			// TODO :  should we do this?
+			// TODO :  If we have to implement the full paper. That is, predicting circles of all nodes
 			// Update the latent variables (cluster assignments) in a random order.
 			
 			// loglikelihood before starting gradient ascent
@@ -146,12 +143,12 @@ public class Snap {
 		return bigTheta;
 	}
 
-	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat, Graph gd) {
+	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat, List<BigTheta> edgeSet, Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures) {
 
 		double ll = 0.0;
 		int K = chat.size();
 
-		for (Map.Entry<Pair<Integer, Integer>, Map<Integer, Integer>> entry : gd.edgeFeatures.entrySet()) {
+		for (Map.Entry<Pair<Integer, Integer>, Map<Integer, Integer>> entry : edgeFeatures.entrySet()) {
 			double inp_ = 0;
 
 			Pair<Integer, Integer> e = entry.getKey();
@@ -159,7 +156,7 @@ public class Snap {
 			int e1 = e.getFirst();
 			int e2 = e.getSecond();
 
-			boolean exists = gd.edgeSet.contains(e) ? true : false;
+			boolean exists = edgeSet.contains(e) ? true : false;
 
 			for (int k = 0; k < K; k++) {
 				double d = chat.get(k).contains(e1) && chat.get(k).contains(e2) ? 1 : -bigThetas.get(k).alpha;
