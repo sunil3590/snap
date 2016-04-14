@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Graph implements Cloneable {
+public class Graph {
 
 	int nNodes;
 	Map<String, Integer> nodeIndex;
@@ -31,11 +31,6 @@ public class Graph implements Cloneable {
 		clusters = new ArrayList<Set<Integer>>();
 	}
 	
-	protected Object clone() throws CloneNotSupportedException{
-		Graph cloned = (Graph)super.clone();
-		return cloned;
-	}
-
 	public boolean loadGraphData(String nodeFeatureFile, String selfFeatureFile,
 			String clusterFile, String edgeFile, String which, boolean directed){
 		try{
@@ -213,8 +208,10 @@ public class Graph implements Cloneable {
 		
 		while(it.hasNext()){
 			Pair<Integer, Integer> pair = it.next();
-			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid){
+				node.edges.add(pair);
 				it.remove();
+			}
 		}
 		
 		/*for(Pair<Integer, Integer> pair : edgeSet){
@@ -248,25 +245,49 @@ public class Graph implements Cloneable {
 		return node;
 	}
 	
+	public void AddNode(Node node, int nodeId){
+		
+		for(int cId : node.circles){
+				clusters.get(cId).add(nodeId);
+		}
+		
+		for(Pair<Integer, Integer> pair : node.edges){
+			edgeSet.add(pair);
+		}
+		
+		for(Pair<Integer, Integer> pair : node.edFeatures.keySet()){
+			edgeFeatures.put(pair, node.edFeatures.get(pair));
+		}
+		
+		nNodes++;
+	}
+	
 	public static void main(String[] args){
-		Graph graph = new Graph();
 		
-		String filePrefix = "./data/facebook/698"; //
-		String nodeFeatureFile = filePrefix + ".feat"; // TODO
-		String selfFeatureFile = filePrefix + ".egofeat";
-		String clusterFile = filePrefix + ".circles";
-		String edgeFile = filePrefix + ".edges";
-		String which = "FRIENDFEATURES";
-		boolean directed = false;
-		
-		boolean status = graph.loadGraphData(nodeFeatureFile, selfFeatureFile, 
-				clusterFile, edgeFile, which, directed);
-		
-		graph.removeNode(0);
-		
-		if (status == false) {
-			System.out.println("Could not build graph");
-			return;
+		try{
+			Graph graph = new Graph();
+			
+			String filePrefix = "./data/facebook/698"; //
+			String nodeFeatureFile = filePrefix + ".feat"; // TODO
+			String selfFeatureFile = filePrefix + ".egofeat";
+			String clusterFile = filePrefix + ".circles";
+			String edgeFile = filePrefix + ".edges";
+			String which = "FRIENDFEATURES";
+			boolean directed = false;
+			
+			boolean status = graph.loadGraphData(nodeFeatureFile, selfFeatureFile, 
+					clusterFile, edgeFile, which, directed);
+			
+			Node node = graph.removeNode(0);
+			
+			graph.AddNode(node, 0);
+			
+			if (status == false) {
+				System.out.println("Could not build graph");
+				return;
+			}
+		} catch (Exception ex){
+			
 		}
 	}
 
