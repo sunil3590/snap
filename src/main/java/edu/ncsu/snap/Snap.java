@@ -25,9 +25,9 @@ public class Snap {
 		// graph parameters
 		int K = gd.clusters.size();
 		int nEdgeFeatures = gd.nEdgeFeatures;
+		List<Set<Integer>> chat = gd.clusters;
 
 		// this is the output required
-		ArrayList<Set<Integer>> chat = new ArrayList<Set<Integer>>();
 		List<BigTheta> bigTheta = new ArrayList<BigTheta>();
 		for (int i = 0; i < K; i++) {
 			bigTheta.add(new BigTheta(nEdgeFeatures));
@@ -55,21 +55,13 @@ public class Snap {
 					
 					Random rand = new Random();
 					
-					// initialize clusters
-					chat.get(k).clear();
-					for (int i = 0; i < gd.nNodes; i ++) {
-						if (rand.nextInt(100) % 2 == 0) {
-							chat.get(k).add(i);
-						}
-					}
-					
 					// initialize all theta to 0
 					for (int f = 0; f < gd.nEdgeFeatures; f++) {
 						bigTheta.get(k).theta[f] = 0;
 					}
 					// Just set a single feature to 1 as a random initialization.
-					bigTheta.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
-					bigTheta.get(k).theta[0] = 1;
+					bigTheta.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0; // this is one of the node features 
+					bigTheta.get(k).theta[0] = 1; // this is the random reason for the circle creation
 					
 					// initialize alpha
 					bigTheta.get(k).alpha = 1;
@@ -126,7 +118,7 @@ public class Snap {
 		return bigTheta;
 	}
 
-	private static double logLikelihood(List<BigTheta> bigTheta, ArrayList<Set<Integer>> chat, Graph gd) {
+	private static double logLikelihood(List<BigTheta> bigTheta, List<Set<Integer>> chat, Graph gd) {
 
 		double ll = 0.0;
 		int K = chat.size();
@@ -135,8 +127,7 @@ public class Snap {
 			double inp_ = 0;
 
 			Pair<Integer, Integer> e = entry.getKey();
-			// TODO : what is this "val"? may be phi(e)?
-			Map<Integer, Integer> val = entry.getValue();
+			Map<Integer, Integer> val = entry.getValue(); // phi(e)
 			int e1 = e.getFirst();
 			int e2 = e.getSecond();
 
