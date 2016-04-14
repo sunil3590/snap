@@ -1,6 +1,8 @@
 package edu.ncsu.snap;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Snap {
@@ -10,25 +12,28 @@ public class Snap {
 
 	static void addNode(Graph gd, Node node) {
 		// compute the theta and alpha values for the given graph and circles
-		BigTheta bigTheta = train(gd);
-		
+		List<BigTheta> bigTheta = train(gd);
+
 		// TODO : add the node to gd based on log-likelihood
 	}
 
 	// co ordinate ascent to find theta and alpha
-	private static BigTheta train(Graph gd) {
+	private static List<BigTheta> train(Graph gd) {
 
 		// graph parameters
-		int k = gd.k;
+		int K = gd.clusters.size();
 		int nNodeFeatures = gd.nNodeFeatures;
 		int nEdgeFeatures = gd.nEdgeFeatures;
 
 		// this is the output
 		int nTheta = nEdgeFeatures;
-		BigTheta bigTheta = new BigTheta(nTheta, k);
+		List<BigTheta> bigTheta = new ArrayList<BigTheta>();
+		for (int i = 0; i < K; i++) {
+			bigTheta.add(new BigTheta(nTheta));
+		}
 
 		double l1 = 0; // gain
-		double[] dlda = new double[k]; // alpha parameter
+		double[] dlda = new double[K]; // alpha parameter
 		double[] dldt = new double[nTheta];
 
 		// learning rate
@@ -43,15 +48,36 @@ public class Snap {
 
 		return bigTheta;
 	}
-	
-	private static double logLikelihood(BigTheta bigTheta, ArrayList<Set<Integer>> chat, Graph gd) {
+
+	private static double logLikelihood(List<BigTheta> bigTheta, ArrayList<Set<Integer>> chat, Graph gd) {
 		
 		double ll = 0.0;
+		int K = chat.size();
 		
-		int k = chat.size();
-		int n = gd.nNodes;
-		// chat.get(i).contains(n)
-		
+		for (Map.Entry<Pair<Integer,Integer>,Map<Integer,Integer>> entry : gd.edgeFeatures.entrySet()) {
+		    double inp_ = 0;
+		    
+		    Pair<Integer,Integer> e = entry.getKey();
+		    Map<Integer, Integer> val = entry.getValue(); // TODO : what is this value?  may be phi(e)?
+		    int e1 = e.getFirst();
+		    int e2 = e.getSecond();
+		    
+		    boolean exists = gd.edgeSet.contains(e) ? true : false;
+		    
+		    for (int k = 0; k < K; k++)
+		    {
+		      double d = chat.get(k).contains(e1) && chat.get(k).contains(e2) ? 1 : -bigTheta.get(k).alpha;
+		      inp_ += d * Util.inp(val, bigTheta.get(k).theta);
+		    }
+		    
+		    if (exists) {
+		    	ll += inp_;
+		    }
+		    
+		    double ll_ = Math.log(1 + Math.exp(inp_));
+		    ll += -ll_;
+		}
+		  
 		return ll;
 	}
 }

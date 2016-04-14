@@ -2,10 +2,10 @@ package edu.ncsu.snap;
 
 public class BigTheta {
 	double[] theta;
-	double[] alpha;
+	double alpha;
 
-	BigTheta(int nTheta, int k) {
+	BigTheta(int nTheta) {
 		theta = new double[nTheta];
-		alpha = new double[k];
+		alpha = 0.0;
 	}
 }

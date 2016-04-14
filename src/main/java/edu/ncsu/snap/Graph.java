@@ -16,15 +16,16 @@ public class Graph {
 	int nNodes;
 	List<Set<Integer>> clusters;
 	int nEdgeFeatures;
-	Map<Pair<Integer, Integer>, Map<Integer, List<Integer>>> edgeFeatures;
+	Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures;
 	int nNodeFeatures = 0;
+	Set<Pair<Integer,Integer>> edgeSet;
 	
 	public Graph(){
 		
 		nodeIndex = new HashMap<String, Integer>();
 		indexNode = new HashMap<Integer, String>();
 		clusters = new ArrayList<Set<Integer>>();
-		edgeFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, List<Integer>>>();
+		edgeFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, Integer>>();
 		
 	}
 	

@@ -6,21 +6,31 @@ import java.util.List;
 import java.util.Map;
 
 public class Util {
-	
-	public Map<Integer, List<Integer>> makeSparse(List<List<Integer>> list, int[] d, int n){
-		Map<Integer, List<Integer>> res = new HashMap<Integer, List<Integer>>();
-		
-		return res;
-	}
-	
-	public List<Integer> diff(List<Integer> f1, List<Integer> f2, int D){
-		List<Integer> res = new ArrayList<Integer>();
-		
-		for(int i = 0; i < D; i++){
-			res.add(Math.abs(f1.get(i) - f2.get(i)));
-		}
-		
+
+	public static Map<Integer, Integer> makeSparse(List<List<Integer>> list, int[] d, int n) {
+		Map<Integer, Integer> res = new HashMap<Integer, Integer>();
+
 		return res;
 	}
 
+	public static List<Integer> diff(List<Integer> f1, List<Integer> f2, int D) {
+		List<Integer> res = new ArrayList<Integer>();
+
+		for (int i = 0; i < D; i++) {
+			res.add(Math.abs(f1.get(i) - f2.get(i)));
+		}
+
+		return res;
+	}
+
+	// Inner product
+	// TODO : what is x? may be phi(e)?
+	public static double inp(Map<Integer,Integer> x, double theta[])
+	{
+		double res = 0;
+		for (Map.Entry<Integer,Integer> entry : x.entrySet()) {
+			res += entry.getValue() * theta[entry.getKey()];
+		}
+		return res;
+	}
 }
