@@ -193,11 +193,14 @@ public class Graph {
 		
 	}
 	
-	public void removeNode(int nodeid){
+	public Node removeNode(int nodeid){
 		
-		for(Set<Integer> set : clusters){
-			if(set.contains(nodeid))
-				set.remove(nodeid);
+		Node node = new Node();
+		
+		for(int i = 0; i < clusters.size(); i++){
+			if(clusters.get(i).contains(nodeid))
+				clusters.get(i).remove(nodeid);
+			node.circles.add(i);
 		}
 		
 		for(Pair<Integer, Integer> pair : edgeSet){
@@ -206,16 +209,19 @@ public class Graph {
 		}
 		
 		for(Pair<Integer, Integer> pair : edgeFeatures.keySet()){
-			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
-				edgeFeatures.remove(pair);
-			else {
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid){
+				node.edFeatures.put(pair, edgeFeatures.get(pair));
+				edgeFeatures.remove(pair);	
+			}
+			/*else {
 				for(int key : edgeFeatures.get(pair).keySet()){
 					if(key == nodeid)
 						edgeFeatures.get(pair).remove(key);
 				}	
-			}
+			}*/
 		}
 		
+		return node;
 	}
 	
 	public static void main(String[] args){
@@ -236,8 +242,6 @@ public class Graph {
 			System.out.println("Could not build graph");
 			return;
 		}
-		
-		System.out.println("here");
 	}
 
 }
