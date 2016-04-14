@@ -10,11 +10,14 @@ public class Node {
 	
 	public List<Integer> features;
 	
+	public Set<Pair<Integer, Integer>> edges;
+	
 	public Map<Pair<Integer, Integer>, Map<Integer, Integer>> edFeatures;
 	
 	public Node(){
 		circles = new ArrayList<Integer>();
 		features = new ArrayList<Integer>();
+		edges = new HashSet<Pair<Integer, Integer>>();
 		edFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, Integer>>();
 	}
 	
