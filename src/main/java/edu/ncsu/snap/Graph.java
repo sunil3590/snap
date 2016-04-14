@@ -4,12 +4,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Graph {
+public class Graph implements Cloneable {
 
 	int nNodes;
 	Map<String, Integer> nodeIndex;
@@ -28,6 +29,11 @@ public class Graph {
 		edgeSet = new HashSet<Pair<Integer, Integer>>();
 		edgeFeatures = new HashMap<Pair<Integer, Integer>, Map<Integer, Integer>>();
 		clusters = new ArrayList<Set<Integer>>();
+	}
+	
+	protected Object clone() throws CloneNotSupportedException{
+		Graph cloned = (Graph)super.clone();
+		return cloned;
 	}
 
 	public boolean loadGraphData(String nodeFeatureFile, String selfFeatureFile,
@@ -203,23 +209,41 @@ public class Graph {
 			node.circles.add(i);
 		}
 		
-		for(Pair<Integer, Integer> pair : edgeSet){
+		Iterator<Pair<Integer,Integer>> it = edgeSet.iterator();
+		
+		while(it.hasNext()){
+			Pair<Integer, Integer> pair = it.next();
 			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
-				edgeSet.remove(pair);
+				it.remove();
 		}
 		
-		for(Pair<Integer, Integer> pair : edgeFeatures.keySet()){
+		/*for(Pair<Integer, Integer> pair : edgeSet){
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid)
+				edgeSet.remove(pair);
+		}*/
+		
+		Iterator<Pair<Integer, Integer>> it2 = edgeFeatures.keySet().iterator();
+		
+		while(it2.hasNext()){
+			Pair<Integer, Integer> pair = it2.next();
 			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid){
 				node.edFeatures.put(pair, edgeFeatures.get(pair));
 				edgeFeatures.remove(pair);	
 			}
-			/*else {
+		}
+		
+		/*for(Pair<Integer, Integer> pair : edgeFeatures.keySet()){
+			if(pair.getFirst() == nodeid || pair.getSecond() == nodeid){
+				node.edFeatures.put(pair, edgeFeatures.get(pair));
+				edgeFeatures.remove(pair);	
+			}
+			else {
 				for(int key : edgeFeatures.get(pair).keySet()){
 					if(key == nodeid)
 						edgeFeatures.get(pair).remove(key);
 				}	
-			}*/
-		}
+			}
+		}*/
 		
 		return node;
 	}
