@@ -12,11 +12,39 @@ public class Snap {
 	static int gradientReps = 50;
 	static int reps = 25;
 
-	static void addNode(Graph gd, Node node) {
-		// compute the theta and alpha values for the given graph and circles
-		List<BigTheta> bigTheta = train(gd);
+	static int whichCircle(Graph gd, int n_id) {
+		// make a copy of the full graph
+		Graph gd_removed = gd; // TODO : deep copy constructor
 
+		// remove a node // TODO : loop over gd.nNodes
+		Node node = gd_removed.removeNode(n_id);
+		List<Set<Integer>> chat_removed = gd_removed.clusters;
+		
+		// compute the theta and alpha values for the given graph and circles
+		List<BigTheta> bigThetas = train(gd_removed);
+		
 		// TODO : add the node to gd based on log-likelihood
+		int c_id = 0;
+		double ll = 0.0;
+		double max_ll = 0.0;
+		for (int i = 0; i < gd.clusters.size(); i++) {
+			// add node ID to cluster i
+			List<Set<Integer>> chat = new ArrayList<Set<Integer>>(chat_removed);
+			chat.get(i).add(n_id);
+			
+			// TODO : not a clean way, gd already has the ground truth
+			ll = Snap.logLikelihood(bigThetas, chat, gd);
+			if (ll > max_ll) {
+				c_id = i;
+			}
+		}
+		
+		// evaluate the prediction
+		if (node.circles.contains(c_id)) {
+			System.out.println("Hurray : " + c_id);
+		}
+		
+		return c_id;
 	}
 
 	// co ordinate ascent to find theta and alpha
@@ -118,7 +146,7 @@ public class Snap {
 		return bigTheta;
 	}
 
-	private static double logLikelihood(List<BigTheta> bigTheta, List<Set<Integer>> chat, Graph gd) {
+	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat, Graph gd) {
 
 		double ll = 0.0;
 		int K = chat.size();
@@ -134,8 +162,8 @@ public class Snap {
 			boolean exists = gd.edgeSet.contains(e) ? true : false;
 
 			for (int k = 0; k < K; k++) {
-				double d = chat.get(k).contains(e1) && chat.get(k).contains(e2) ? 1 : -bigTheta.get(k).alpha;
-				inp_ += d * Util.inp(val, bigTheta.get(k).theta);
+				double d = chat.get(k).contains(e1) && chat.get(k).contains(e2) ? 1 : -bigThetas.get(k).alpha;
+				inp_ += d * Util.inp(val, bigThetas.get(k).theta);
 			}
 
 			if (exists) {
@@ -169,11 +197,8 @@ public class Snap {
 			return;
 		}
 		
-		// TODO : create the node to be added
-		Node node = new Node();
-		
 		// TODO : run SNAP algo to add a new node to the existing clusters
-		Snap.addNode(gd, node);
+		int c_id = Snap.whichCircle(gd, 0);
 		
 		return;
 	}
