@@ -13,14 +13,17 @@ public class Snap {
 	static int reps = 25;
 
 	static int whichCircle(Graph gd, Node node) {
-		
+
 		// compute the theta and alpha values for the given graph and circles
 		List<BigTheta> bigThetas = train(gd);
-		
+
 		// current circles
 		List<Set<Integer>> chat = gd.clusters;
-		
-		// add the node to gd based on log-likelihood
+
+		// add new node to the graph
+		gd.addNode(node);
+
+		// predict the cluster id
 		int c_id = 0;
 		double ll = 0.0;
 		double max_ll = 0.0;
@@ -28,19 +31,14 @@ public class Snap {
 			// add node ID to cluster i
 			List<Set<Integer>> chat_new = new ArrayList<Set<Integer>>(chat);
 			chat_new.get(i).add(node.nodeId);
-			
-			// TODO : not a clean way, gd already has the ground truth
-			ll = Snap.logLikelihood(bigThetas, chat_new, gd);
+
+			// compute log likelihood of this circle assignment
+			ll = Snap.logLikelihood(bigThetas, chat_new, gd.edgeSet, gd.edgeFeatures);
 			if (ll > max_ll) {
 				c_id = i;
 			}
 		}
-		
-		// evaluate the prediction
-		if (node.circles.contains(c_id)) {
-			System.out.println("Hurray : " + c_id);
-		}
-		
+
 		return c_id;
 	}
 
@@ -72,32 +70,37 @@ public class Snap {
 
 		// repetitions
 		for (int rep = 0; rep < reps; rep++) {
-			
+
 			// If it's the first repetition or the solution is degenerate,
 			// randomly initialize the weights
 			for (int k = 0; k < K; k++) {
 				if (rep == 0 || chat.get(k).size() == 0 || (int) chat.get(k).size() == gd.nNodes) {
-					
+
 					Random rand = new Random();
-					
+
 					// initialize all theta to 0
 					for (int f = 0; f < gd.nEdgeFeatures; f++) {
 						bigTheta.get(k).theta[f] = 0;
 					}
-					// Just set a single feature to 1 as a random initialization.
-					bigTheta.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0; // this is one of the node features 
-					bigTheta.get(k).theta[0] = 1; // this is the random reason for the circle creation
-					
+					// Just set a single feature to 1 as a random
+					// initialization.
+					bigTheta.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
+					// this is the random reason for the circle creation
+					// not any of the node feature
+					bigTheta.get(k).theta[0] = 1;
+
 					// initialize alpha
 					bigTheta.get(k).alpha = 1;
 				}
 			}
-			
-			// TODO :  If we have to implement the full paper. That is, predicting circles of all nodes
-			// Update the latent variables (cluster assignments) in a random order.
-			
+
+			// TODO : If we have to implement the full paper. That is,
+			// predicting circles of all nodes
+			// Update the latent variables (cluster assignments) in a random
+			// order.
+
 			// loglikelihood before starting gradient ascent
-			ll_prev = logLikelihood(bigTheta, chat, gd);
+			ll_prev = logLikelihood(bigTheta, chat, gd.edgeSet, gd.edgeFeatures);
 
 			// gradient ascent
 			for (int iteration = 0; iteration < gradientReps; iteration++) {
@@ -107,18 +110,15 @@ public class Snap {
 				// update bigtheta using dlda and dldt
 				for (int k = 0; k < K; k++) {
 					for (int f = 0; f < nEdgeFeatures; f++) {
-						bigTheta.get(k).theta[f] += increment * dldt[k][f];	
+						bigTheta.get(k).theta[f] += increment * dldt[k][f];
 					}
 				}
 				for (int k = 0; k < K; k++) {
 					bigTheta.get(k).alpha += increment * dlda[k];
 				}
-				
-				// just to show something is happening
-				System.out.print(".");
 
 				// compute new log likelihood
-				ll = logLikelihood(bigTheta, chat, gd);
+				ll = logLikelihood(bigTheta, chat, gd.edgeSet, gd.edgeFeatures);
 
 				// If we reduced the objective, undo the update and stop.
 				if (ll < ll_prev) {
@@ -133,17 +133,17 @@ public class Snap {
 					ll = ll_prev;
 					break;
 				}
-				
+
 				// keep the new likelihood
 				ll_prev = ll;
 			}
-			System.out.println("");
 		}
 
 		return bigTheta;
 	}
 
-	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat, List<BigTheta> edgeSet, Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures) {
+	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat,
+			Set<Pair<Integer, Integer>> edgeSet, Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures) {
 
 		double ll = 0.0;
 		int K = chat.size();
@@ -173,30 +173,55 @@ public class Snap {
 
 		return ll;
 	}
-	
+
 	public static void main(String[] args) {
+
+		// input arguments
+		if (args.length != 1) {
+			System.out.println("Ego node ID not passed");
+			return;
+		}
 		
 		// input data to be used for analysis
-		String filePrefix = "./data/facebook/698"; //
-		String nodeFeatureFile = filePrefix + ".feat"; // TODO
+		String filePrefix = "./data/facebook/" + args[0];
+		String nodeFeatureFile = filePrefix + ".feat";
 		String selfFeatureFile = filePrefix + ".egofeat";
 		String clusterFile = filePrefix + ".circles";
 		String edgeFile = filePrefix + ".edges";
 		String which = "FRIENDFEATURES";
 		boolean directed = false;
-		
+
 		// create graph object using input file names
 		Graph gd = new Graph();
-		boolean status = gd.loadGraphData(nodeFeatureFile, selfFeatureFile, 
-				clusterFile, edgeFile, which, directed);
+		boolean status = gd.loadGraphData(nodeFeatureFile, selfFeatureFile, clusterFile, edgeFile, which, directed);
 		if (status == false) {
 			System.out.println("Could not build graph");
 			return;
 		}
-		
-		// TODO : run SNAP algo to add a new node to the existing clusters
-		int c_id = Snap.whichCircle(gd, 0);
-		
+
+		int correct = 0;
+		for (int i = 0; i < gd.nNodes; i++) {
+			// TODO : can i reuse the same graph object?
+
+			// remove a node
+			Node node = gd.removeNode(i);
+
+			// predict which circle the node belongs to
+			int c_id = Snap.whichCircle(gd, node);
+
+			// evaluate the prediction
+			if (node.circles.contains(c_id)) {
+				correct++;
+				System.out.println("Hurray");
+			} else {
+				System.out.println("Boooo");
+			}
+			
+			System.out.println((float) correct / (i + 1));
+		}
+
+		System.out.println("Accuracy = " + (float) correct / gd.nNodes);
+
 		return;
 	}
 }

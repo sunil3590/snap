@@ -128,8 +128,6 @@ public class Graph {
 			}
 			
 			for(int m = 0; m < nNodes; m++){
-				int mn = 0;
-				mn++;
 				for(int n = (directed? 0 : m+1); n < nNodes; n++){
 					if(m == n)
 						continue;
@@ -198,6 +196,8 @@ public class Graph {
 		
 		Node node = new Node();
 		
+		node.nodeId = nodeid;
+		
 		for(int i = 0; i < clusters.size(); i++){
 			if(clusters.get(i).contains(nodeid))
 				clusters.get(i).remove(nodeid);
@@ -247,7 +247,9 @@ public class Graph {
 		return node;
 	}
 	
-	public void AddNode(Node node, int nodeId){
+	public void addNode(Node node){
+		
+		int nodeId = node.nodeId;
 		
 		for(int cId : node.circles){
 				clusters.get(cId).add(nodeId);
@@ -265,12 +267,11 @@ public class Graph {
 	}
 	
 	public static void main(String[] args){
-		
 		try{
 			Graph graph = new Graph();
 			
-			String filePrefix = "./data/facebook/698"; //
-			String nodeFeatureFile = filePrefix + ".feat"; // TODO
+			String filePrefix = "./data/facebook/698";
+			String nodeFeatureFile = filePrefix + ".feat";
 			String selfFeatureFile = filePrefix + ".egofeat";
 			String clusterFile = filePrefix + ".circles";
 			String edgeFile = filePrefix + ".edges";
@@ -282,7 +283,7 @@ public class Graph {
 			
 			Node node = graph.removeNode(0);
 			
-			graph.AddNode(node, 0);
+			graph.addNode(node);
 			
 			if (status == false) {
 				System.out.println("Could not build graph");
