@@ -13,7 +13,7 @@ public class Snap {
 	static int reps = 1; // TODO : do we need the outer rep loop?
 	static double lambda = 1.0;
 
-	static int whichCircle(Graph gd, Node node) {
+	static List<Integer> whichCircle(Graph gd, Node node) {
 
 		// compute the theta and alpha values for the given graph and circles
 		List<BigTheta> bigThetas = train(gd);
@@ -34,30 +34,39 @@ public class Snap {
 		gd.addNode(node);
 
 		// initial prediction will be that it does not belong to any circle
-		int c_id = -1;
-		// max ll will be for the node not belonging to any circle
-		double max_ll = Snap.logLikelihood(bigThetas, newChat, gd.edgeSet, gd.edgeFeatures);
+		List<Integer> predCID = new ArrayList<Integer>();
+		List<Integer> curPredCID;
+		double max_ll = Double.NEGATIVE_INFINITY;
 		double ll = 0.0;
 		
-		for (int k = 0; k < gd.clusters.size(); k++) {
-			// add node ID to cluster i
-			newChat.get(k).add(node.nodeId);
+		for (int i = 0; i < Math.pow(2, gd.clusters.size()); i++) {
+			curPredCID = new ArrayList<Integer>();
+			// add node ID to all clusters represented by i
+			for (int k = 0; k < gd.clusters.size(); k++) {
+				int belongs = (i >> k) & 1;
+				if (belongs == 1) {
+					newChat.get(k).add(node.nodeId);
+					curPredCID.add(k);
+				}
+			}
 
 			// compute log likelihood of this circle assignment
 			ll = Snap.logLikelihood(bigThetas, newChat, gd.edgeSet, gd.edgeFeatures);
 			if (ll > max_ll) {
-				c_id = k;
+				predCID = curPredCID;
 				max_ll = ll;
 			}
 			
-			// remove the node from cluster k before next try
-			newChat.get(k).remove(node.nodeId);
+			// remove the node from clusters before next try
+			for (int k : curPredCID) {
+				newChat.get(k).remove(node.nodeId);	
+			}
 		}
 		
 		// remove the new node that was added temporarily
 		gd.removeNode(node.nodeId);
 
-		return c_id;
+		return predCID;
 	}
 
 	// co ordinate ascent to find theta and alpha on original graph
@@ -275,7 +284,9 @@ public class Snap {
 			return;
 		}
 
-		int correct = 0;
+		int tp = 0;
+		int totalPred = 0;
+		int totalTrue = 0;
 		for (int i = 0; i < gd.nNodes; i++) {
 			// remove a node and its cluster info from the full graph
 			Node node = gd.removeNode(i);
@@ -285,28 +296,27 @@ public class Snap {
 			node.circles = new ArrayList<Integer>();
 
 			// predict which circle the node belongs to
-			int c_id = Snap.whichCircle(gd, node);
+			List<Integer> predCircles = Snap.whichCircle(gd, node);
 
 			// evaluate the prediction
-			if ((c_id == -1 && trueCircles.size() == 0) || trueCircles.contains(c_id)) {
-				correct++;
-				System.out.println("Hurray");
-				System.out.println(trueCircles.toString() + c_id);
-			} else {
-				System.out.println("Boooo");
-				System.out.println(trueCircles.toString() + c_id);
-				
+			totalPred += predCircles.size();
+			totalTrue += trueCircles.size();
+			for (int pc : predCircles) {
+				if (trueCircles.contains(pc))
+					tp++;
 			}
 			
 			// add the node and its cluster info back
 			node.circles = trueCircles;
 			gd.addNode(node);
 
-			System.out.println((float) correct / (i + 1));
+			// print some metrics
+			System.out.println(trueCircles.toString() + "    " + predCircles.toString());
+			System.out.println("Precision = " + (float)tp/totalTrue);
+			System.out.println("Recall    = " + (float)tp/totalPred);
+			System.out.println("% complete = " + (float)(i+1)/gd.nNodes);
 			System.out.println("---------------------------");
 		}
-
-		System.out.println("Accuracy = " + (float) correct / gd.nNodes);
 
 		return;
 	}
