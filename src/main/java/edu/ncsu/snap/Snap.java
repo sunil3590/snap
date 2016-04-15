@@ -8,9 +8,9 @@ import java.util.Set;
 
 public class Snap {
 
-	// TODO : configurable parameters
 	static int gradientReps = 50;
 	static int reps = 25;
+	static double lambda = 1.0;
 
 	static int whichCircle(Graph gd, Node node) {
 
@@ -26,23 +26,27 @@ public class Snap {
 		// predict the cluster id
 		int c_id = 0;
 		double ll = 0.0;
-		double max_ll = 0.0;
-		for (int i = 0; i < gd.clusters.size(); i++) {
+		double max_ll = Double.NEGATIVE_INFINITY;
+		for (int k = 0; k < gd.clusters.size(); k++) {
 			// add node ID to cluster i
 			List<Set<Integer>> chat_new = new ArrayList<Set<Integer>>(chat);
-			chat_new.get(i).add(node.nodeId);
+			chat_new.get(k).add(node.nodeId);
 
 			// compute log likelihood of this circle assignment
 			ll = Snap.logLikelihood(bigThetas, chat_new, gd.edgeSet, gd.edgeFeatures);
 			if (ll > max_ll) {
-				c_id = i;
+				c_id = k;
+				max_ll = ll;
 			}
+			
+			// remove the node from cluster k before next try
+			chat_new.get(k).remove(node.nodeId);
 		}
 
 		return c_id;
 	}
 
-	// co ordinate ascent to find theta and alpha
+	// co ordinate ascent to find theta and alpha on original graph
 	private static List<BigTheta> train(Graph gd) {
 
 		// graph parameters
@@ -51,9 +55,9 @@ public class Snap {
 		List<Set<Integer>> chat = gd.clusters;
 
 		// this is the output required
-		List<BigTheta> bigTheta = new ArrayList<BigTheta>();
+		List<BigTheta> bigThetas = new ArrayList<BigTheta>();
 		for (int i = 0; i < K; i++) {
-			bigTheta.add(new BigTheta(nEdgeFeatures));
+			bigThetas.add(new BigTheta(nEdgeFeatures));
 		}
 
 		// log likelihood and its partial derivatives for gradiant ascent
@@ -80,17 +84,17 @@ public class Snap {
 
 					// initialize all theta to 0
 					for (int f = 0; f < gd.nEdgeFeatures; f++) {
-						bigTheta.get(k).theta[f] = 0;
+						bigThetas.get(k).theta[f] = 0;
 					}
 					// Just set a single feature to 1 as a random
 					// initialization.
-					bigTheta.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
+					bigThetas.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
 					// this is the random reason for the circle creation
 					// not any of the node feature
-					bigTheta.get(k).theta[0] = 1;
+					bigThetas.get(k).theta[0] = 1;
 
 					// initialize alpha
-					bigTheta.get(k).alpha = 1;
+					bigThetas.get(k).alpha = 1;
 				}
 			}
 
@@ -99,36 +103,38 @@ public class Snap {
 			// Update the latent variables (cluster assignments) in a random
 			// order.
 
-			// loglikelihood before starting gradient ascent
-			ll_prev = logLikelihood(bigTheta, chat, gd.edgeSet, gd.edgeFeatures);
+			// log likelihood before starting gradient ascent
+			ll_prev = logLikelihood(bigThetas, chat, gd.edgeSet, gd.edgeFeatures);
 
 			// gradient ascent
 			for (int iteration = 0; iteration < gradientReps; iteration++) {
 
 				// TODO : compute dlda and dldt
+				// TODO :  full gd?
+				dl(dldt, dlda, K, lambda, gd, bigThetas);
 
 				// update bigtheta using dlda and dldt
 				for (int k = 0; k < K; k++) {
 					for (int f = 0; f < nEdgeFeatures; f++) {
-						bigTheta.get(k).theta[f] += increment * dldt[k][f];
+						bigThetas.get(k).theta[f] += increment * dldt[k][f];
 					}
 				}
 				for (int k = 0; k < K; k++) {
-					bigTheta.get(k).alpha += increment * dlda[k];
+					bigThetas.get(k).alpha += increment * dlda[k];
 				}
 
 				// compute new log likelihood
-				ll = logLikelihood(bigTheta, chat, gd.edgeSet, gd.edgeFeatures);
+				ll = logLikelihood(bigThetas, chat, gd.edgeSet, gd.edgeFeatures);
 
 				// If we reduced the objective, undo the update and stop.
 				if (ll < ll_prev) {
 					for (int k = 0; k < K; k++) {
 						for (int f = 0; f < nEdgeFeatures; f++) {
-							bigTheta.get(k).theta[f] -= increment * dldt[k][f];
+							bigThetas.get(k).theta[f] -= increment * dldt[k][f];
 						}
 					}
 					for (int k = 0; k < K; k++) {
-						bigTheta.get(k).alpha -= increment * dlda[k];
+						bigThetas.get(k).alpha -= increment * dlda[k];
 					}
 					ll = ll_prev;
 					break;
@@ -139,7 +145,64 @@ public class Snap {
 			}
 		}
 
-		return bigTheta;
+		return bigThetas;
+	}
+
+	private static void dl(double[][] dldt, double[] dlda, int K, double lambda, Graph gd, List<BigTheta> bigThetas) {
+
+		for (int k = 0; k < K; k++) {
+			for (int f = 0; f < gd.nEdgeFeatures; f++) {
+				dldt[k][f] = -lambda * Math.signum(bigThetas.get(k).theta[f]);	
+			}
+		}
+
+		for (int k = 0; k < K; k ++) {
+			dlda[k] = 0;
+		}
+		
+		List<Set<Integer>> chat = gd.clusters;
+		double inps[] = new double[K];
+		// chat.get(k).contains(n)
+
+		for (Map.Entry<Pair<Integer, Integer>, Map<Integer, Integer>> efm : gd.edgeFeatures.entrySet()) {
+			double inp_ = 0;
+			Pair<Integer, Integer> e = efm.getKey();
+		    int n1 = e.getFirst();
+		    int n2 = e.getSecond();
+		    boolean exists = gd.edgeSet.contains(e) ? true : false;
+		    for (int k = 0; k < K; k ++) {
+		    	inps[k] = Util.inp(efm.getValue(), bigThetas.get(k).theta);
+		    	double d = chat.get(k).contains(n1) && chat.get(k).contains(n2) ? 1.0 : -bigThetas.get(k).alpha;
+		    	inp_ += d * inps[k];
+		    }
+		    
+		    double expinp = Math.exp(inp_);
+		    double q = expinp / (1 + expinp);
+		    if (Double.isNaN(q)) {
+		    	q = 1.0; // Avoids nan in the case of overflow.
+		    }
+
+		    for (int k = 0; k < K; k ++) {
+		    	boolean d_ = chat.get(k).contains(n1) && chat.get(k).contains(n2);
+		    	double d = d_ ? 1.0 : -bigThetas.get(k).alpha;
+		    	
+		    	for (Map.Entry<Integer, Integer> ef : efm.getValue().entrySet()) {
+		    		int i = ef.getKey();
+		    		int f = ef.getValue();
+		    		if (exists) {
+		    			dldt[k][i] += d*f;
+		    		}
+		    		dldt[k][i] += -d*f*q;
+		    	}
+		    	
+		    	if (! d_) {
+		    		if (exists) {
+		    			dlda[k] += -inps[k];
+		    		}
+		    		dlda[k] += inps[k]*q;
+		    	}
+		    }
+		}
 	}
 
 	private static double logLikelihood(List<BigTheta> bigThetas, List<Set<Integer>> chat,
@@ -181,7 +244,7 @@ public class Snap {
 			System.out.println("Ego node ID not passed");
 			return;
 		}
-		
+
 		// input data to be used for analysis
 		String filePrefix = "./data/facebook/" + args[0];
 		String nodeFeatureFile = filePrefix + ".feat";
@@ -213,10 +276,12 @@ public class Snap {
 			if (node.circles.contains(c_id)) {
 				correct++;
 				System.out.println("Hurray");
+				System.out.println(node.circles.toString() + c_id);
 			} else {
 				System.out.println("Boooo");
+				System.out.println(node.circles.toString() + c_id);
 			}
-			
+
 			System.out.println((float) correct / (i + 1));
 		}
 

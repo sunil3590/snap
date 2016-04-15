@@ -199,9 +199,10 @@ public class Graph {
 		node.nodeId = nodeid;
 		
 		for(int i = 0; i < clusters.size(); i++){
-			if(clusters.get(i).contains(nodeid))
+			if(clusters.get(i).contains(nodeid)) {
 				clusters.get(i).remove(nodeid);
-			node.circles.add(i);
+				node.circles.add(i);
+			}
 		}
 		
 		Iterator<Pair<Integer,Integer>> it = edgeSet.iterator();
