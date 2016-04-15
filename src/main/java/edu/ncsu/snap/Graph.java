@@ -246,24 +246,21 @@ public class Graph {
 	}
 
 	// circle info of node is not added here
-	public void addNode(int nodeId, Set<Pair<Integer, Integer>> edges,
-			Map<Pair<Integer, Integer>, Map<Integer, Integer>> edFeatures) {
+	public void addNode(Node node) {
 
-		for (Pair<Integer, Integer> pair : edges) {
+		for (int cId : node.circles) {
+			clusters.get(cId).add(node.nodeId);
+		}
+		
+		for (Pair<Integer, Integer> pair : node.edges) {
 			edgeSet.add(pair);
 		}
 
-		for (Pair<Integer, Integer> pair : edFeatures.keySet()) {
-			edgeFeatures.put(pair, edFeatures.get(pair));
+		for (Pair<Integer, Integer> pair : node.edFeatures.keySet()) {
+			edgeFeatures.put(pair, node.edFeatures.get(pair));
 		}
 
 		nNodes++;
-	}
-
-	public void addNodeToCircles(int nodeId, List<Integer> circles) {
-		for (int cId : circles) {
-			clusters.get(cId).add(nodeId);
-		}
 	}
 
 	public static void main(String[] args) {
@@ -283,7 +280,7 @@ public class Graph {
 
 			Node node = graph.removeNode(0);
 
-			graph.addNode(node.nodeId, node.edges, node.edFeatures);
+			graph.addNode(node);
 
 			if (status == false) {
 				System.out.println("Could not build graph");

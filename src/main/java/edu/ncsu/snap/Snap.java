@@ -29,8 +29,9 @@ public class Snap {
 			newChat.add(newCircle);
 		}
 		
-		// add new node to the graph temporarily, without the cluster info
-		gd.addNode(node.nodeId, node.edges, node.edFeatures);
+		// add new node to the graph temporarily
+		// this node does not have cluster info
+		gd.addNode(node);
 
 		// initial prediction will be that it does not belong to any circle
 		int c_id = -1;
@@ -122,7 +123,6 @@ public class Snap {
 			// gradient ascent
 			for (int iteration = 0; iteration < gradientReps; iteration++) {
 
-				// TODO : compute dlda and dldt
 				// TODO :  full gd?
 				dl(dldt, dlda, K, lambda, gd, bigThetas);
 
@@ -277,28 +277,30 @@ public class Snap {
 
 		int correct = 0;
 		for (int i = 0; i < gd.nNodes; i++) {
-			// TODO : can i reuse the same graph object?
-
-			// remove a node and its cluster info
+			// remove a node and its cluster info from the full graph
 			Node node = gd.removeNode(i);
+			List<Integer> trueCircles = node.circles;
+			
+			// eliminate the circle info from the node
+			node.circles = new ArrayList<Integer>();
 
 			// predict which circle the node belongs to
 			int c_id = Snap.whichCircle(gd, node);
 
 			// evaluate the prediction
-			if ((c_id == -1 && node.circles.size() == 0) || node.circles.contains(c_id)) {
+			if ((c_id == -1 && trueCircles.size() == 0) || trueCircles.contains(c_id)) {
 				correct++;
 				System.out.println("Hurray");
-				System.out.println(node.circles.toString() + c_id);
+				System.out.println(trueCircles.toString() + c_id);
 			} else {
 				System.out.println("Boooo");
-				System.out.println(node.circles.toString() + c_id);
+				System.out.println(trueCircles.toString() + c_id);
 				
 			}
 			
 			// add the node and its cluster info back
-			gd.addNode(node.nodeId, node.edges, node.edFeatures);
-			gd.addNodeToCircles(node.nodeId, node.circles);
+			node.circles = trueCircles;
+			gd.addNode(node);
 
 			System.out.println((float) correct / (i + 1));
 			System.out.println("---------------------------");
