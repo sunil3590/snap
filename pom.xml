@@ -42,7 +42,7 @@
 				<configuration>
 					<mainClass>edu.ncsu.snap.Snap</mainClass>
 					<arguments>
-						<argument>./data/facebook/698</argument>
+						<argument>698</argument>
 					</arguments>
 				</configuration>
 			</plugin>
