@@ -1,6 +1,7 @@
 package edu.ncsu.snap;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +18,9 @@ public class Snap {
 
 		// compute the theta and alpha values for the given graph and circles
 		List<BigTheta> bigThetas = train(gd);
-		
-		// create a copy of original circles which can be modified to assign the new node
+
+		// create a copy of original circles which can be modified to assign the
+		// new node
 		// to one of the circles while predicting
 		List<Set<Integer>> newChat = new ArrayList<Set<Integer>>();
 		for (Set<Integer> circle : gd.clusters) {
@@ -28,7 +30,7 @@ public class Snap {
 			}
 			newChat.add(newCircle);
 		}
-		
+
 		// add new node to the graph temporarily
 		// this node does not have cluster info
 		gd.addNode(node);
@@ -38,7 +40,7 @@ public class Snap {
 		List<Integer> curPredCID;
 		double max_ll = Double.NEGATIVE_INFINITY;
 		double ll = 0.0;
-		
+
 		for (int i = 0; i < Math.pow(2, gd.clusters.size()); i++) {
 			curPredCID = new ArrayList<Integer>();
 			// add node ID to all clusters represented by i
@@ -56,13 +58,13 @@ public class Snap {
 				predCID = curPredCID;
 				max_ll = ll;
 			}
-			
+
 			// remove the node from clusters before next try
 			for (int k : curPredCID) {
-				newChat.get(k).remove(node.nodeId);	
+				newChat.get(k).remove(node.nodeId);
 			}
 		}
-		
+
 		// remove the new node that was added temporarily
 		gd.removeNode(node.nodeId);
 
@@ -96,43 +98,35 @@ public class Snap {
 		}
 
 		// repetitions
+		// TODO : since we randomly initialize bigtheta, we might want to consider
+		// running gradient ascent more than once and keeping the best bigtheta
+		// for that we must keep a copy of bigtheta and we need a clone()
 		for (int rep = 0; rep < reps; rep++) {
 
-			// If it's the first repetition or the solution is degenerate,
 			// randomly initialize the weights
+			Random rand = new Random();
 			for (int k = 0; k < K; k++) {
-				if (rep == 0 || chat.get(k).size() == 0 || (int) chat.get(k).size() == gd.nNodes) {
-
-					Random rand = new Random();
-
-					// initialize all theta to 0
-					for (int f = 0; f < gd.nEdgeFeatures; f++) {
-						bigThetas.get(k).theta[f] = 0;
-					}
-					// Just set a single feature to 1 as a random
-					// initialization.
-					bigThetas.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
-					// this is the random reason for the circle creation
-					// not any of the node feature
-					bigThetas.get(k).theta[0] = 1;
-
-					// initialize alpha
-					bigThetas.get(k).alpha = 1;
+				// initialize all theta to 0
+				for (int f = 0; f < gd.nEdgeFeatures; f++) {
+					bigThetas.get(k).theta[f] = 0;
 				}
+				// Just set a single feature to 1 as a random initialization.
+				bigThetas.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
+				// this is the random reason for the circle creation
+				// not any of the node feature
+				bigThetas.get(k).theta[0] = 1;
+
+				// initialize alpha
+				bigThetas.get(k).alpha = 1;
 			}
-
-			// TODO : If we have to implement the full paper. That is,
-			// predicting circles of all nodes
-			// Update the latent variables (cluster assignments) in a random
-			// order.
-
+			
 			// log likelihood before starting gradient ascent
 			ll_prev = logLikelihood(bigThetas, chat, gd.edgeSet, gd.edgeFeatures);
 
 			// gradient ascent
 			for (int iteration = 0; iteration < gradientReps; iteration++) {
 
-				// TODO :  full gd?
+				// TODO : full gd?
 				dl(dldt, dlda, K, lambda, gd, bigThetas);
 
 				// update bigtheta using dlda and dldt
@@ -174,56 +168,55 @@ public class Snap {
 
 		for (int k = 0; k < K; k++) {
 			for (int f = 0; f < gd.nEdgeFeatures; f++) {
-				dldt[k][f] = -lambda * Math.signum(bigThetas.get(k).theta[f]);	
+				dldt[k][f] = -lambda * Math.signum(bigThetas.get(k).theta[f]);
 			}
 		}
 
-		for (int k = 0; k < K; k ++) {
+		for (int k = 0; k < K; k++) {
 			dlda[k] = 0;
 		}
-		
+
 		List<Set<Integer>> chat = gd.clusters;
 		double inps[] = new double[K];
-		// chat.get(k).contains(n)
 
 		for (Map.Entry<Pair<Integer, Integer>, Map<Integer, Integer>> efm : gd.edgeFeatures.entrySet()) {
 			double inp_ = 0;
 			Pair<Integer, Integer> e = efm.getKey();
-		    int n1 = e.getFirst();
-		    int n2 = e.getSecond();
-		    boolean exists = gd.edgeSet.contains(e) ? true : false;
-		    for (int k = 0; k < K; k ++) {
-		    	inps[k] = Util.inp(efm.getValue(), bigThetas.get(k).theta);
-		    	double d = chat.get(k).contains(n1) && chat.get(k).contains(n2) ? 1.0 : -bigThetas.get(k).alpha;
-		    	inp_ += d * inps[k];
-		    }
-		    
-		    double expinp = Math.exp(inp_);
-		    double q = expinp / (1 + expinp);
-		    if (Double.isNaN(q)) {
-		    	q = 1.0; // Avoids nan in the case of overflow.
-		    }
+			int n1 = e.getFirst();
+			int n2 = e.getSecond();
+			boolean exists = gd.edgeSet.contains(e) ? true : false;
+			for (int k = 0; k < K; k++) {
+				inps[k] = Util.inp(efm.getValue(), bigThetas.get(k).theta);
+				double d = chat.get(k).contains(n1) && chat.get(k).contains(n2) ? 1.0 : -bigThetas.get(k).alpha;
+				inp_ += d * inps[k];
+			}
 
-		    for (int k = 0; k < K; k ++) {
-		    	boolean d_ = chat.get(k).contains(n1) && chat.get(k).contains(n2);
-		    	double d = d_ ? 1.0 : -bigThetas.get(k).alpha;
-		    	
-		    	for (Map.Entry<Integer, Integer> ef : efm.getValue().entrySet()) {
-		    		int i = ef.getKey();
-		    		int f = ef.getValue();
-		    		if (exists) {
-		    			dldt[k][i] += d*f;
-		    		}
-		    		dldt[k][i] += -d*f*q;
-		    	}
-		    	
-		    	if (! d_) {
-		    		if (exists) {
-		    			dlda[k] += -inps[k];
-		    		}
-		    		dlda[k] += inps[k]*q;
-		    	}
-		    }
+			double expinp = Math.exp(inp_);
+			double q = expinp / (1 + expinp);
+			if (Double.isNaN(q)) {
+				q = 1.0; // Avoids nan in the case of overflow.
+			}
+
+			for (int k = 0; k < K; k++) {
+				boolean d_ = chat.get(k).contains(n1) && chat.get(k).contains(n2);
+				double d = d_ ? 1.0 : -bigThetas.get(k).alpha;
+
+				for (Map.Entry<Integer, Integer> ef : efm.getValue().entrySet()) {
+					int i = ef.getKey();
+					int f = ef.getValue();
+					if (exists) {
+						dldt[k][i] += d * f;
+					}
+					dldt[k][i] += -d * f * q;
+				}
+
+				if (!d_) {
+					if (exists) {
+						dlda[k] += -inps[k];
+					}
+					dlda[k] += inps[k] * q;
+				}
+			}
 		}
 	}
 
@@ -260,13 +253,17 @@ public class Snap {
 	}
 
 	public static void main(String[] args) {
-
+		
 		// input arguments
 		if (args.length != 1) {
 			System.out.println("Ego node ID not passed");
 			return;
 		}
 
+		// print start time
+		System.out.println("Started at " + new Date().toString());
+		System.out.println("---------------------------");
+		
 		// input data to be used for analysis
 		String filePrefix = "./data/facebook/" + args[0];
 		String nodeFeatureFile = filePrefix + ".feat";
@@ -289,9 +286,10 @@ public class Snap {
 		int totalTrue = 0;
 		for (int i = 0; i < gd.nNodes; i++) {
 			// remove a node and its cluster info from the full graph
+			System.out.println("Predicting circles for node " + gd.indexNode.get(i));
 			Node node = gd.removeNode(i);
 			List<Integer> trueCircles = node.circles;
-			
+
 			// eliminate the circle info from the node
 			node.circles = new ArrayList<Integer>();
 
@@ -305,18 +303,22 @@ public class Snap {
 				if (trueCircles.contains(pc))
 					tp++;
 			}
-			
+
 			// add the node and its cluster info back
 			node.circles = trueCircles;
 			gd.addNode(node);
 
 			// print some metrics
-			System.out.println(trueCircles.toString() + "    " + predCircles.toString());
-			System.out.println("Precision = " + (float)tp/totalPred);
-			System.out.println("Recall    = " + (float)tp/totalTrue);
-			System.out.println("% complete = " + (float)(i+1)/gd.nNodes * 100);
+			System.out.println("True Circles " + trueCircles.toString());
+			System.out.println("Predicted Circles " + predCircles.toString());
+			System.out.println("Precision = " + (float) tp / totalPred);
+			System.out.println("Recall    = " + (float) tp / totalTrue);
+			System.out.println("% complete = " + (float) (i + 1) / gd.nNodes * 100 + "%");
 			System.out.println("---------------------------");
 		}
+		
+		// print end time
+		System.out.println("Ended at " + new Date().toString());
 
 		return;
 	}
