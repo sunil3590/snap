@@ -312,8 +312,8 @@ public class Snap {
 
 			// print some metrics
 			System.out.println(trueCircles.toString() + "    " + predCircles.toString());
-			System.out.println("Precision = " + (float)tp/totalTrue);
-			System.out.println("Recall    = " + (float)tp/totalPred);
+			System.out.println("Precision = " + (float)tp/totalPred);
+			System.out.println("Recall    = " + (float)tp/totalTrue);
 			System.out.println("% complete = " + (float)(i+1)/gd.nNodes);
 			System.out.println("---------------------------");
 		}
