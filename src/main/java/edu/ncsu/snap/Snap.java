@@ -1,6 +1,7 @@
 package edu.ncsu.snap;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -9,39 +10,51 @@ import java.util.Set;
 public class Snap {
 
 	static int gradientReps = 50;
-	static int reps = 25;
+	static int reps = 1; // TODO : do we need the outer rep loop?
 	static double lambda = 1.0;
 
 	static int whichCircle(Graph gd, Node node) {
 
 		// compute the theta and alpha values for the given graph and circles
 		List<BigTheta> bigThetas = train(gd);
+		
+		// create a copy of original circles which can be modified to assign the new node
+		// to one of the circles while predicting
+		List<Set<Integer>> newChat = new ArrayList<Set<Integer>>();
+		for (Set<Integer> circle : gd.clusters) {
+			Set<Integer> newCircle = new HashSet<Integer>();
+			for (Integer n : circle) {
+				newCircle.add(n);
+			}
+			newChat.add(newCircle);
+		}
+		
+		// add new node to the graph temporarily, without the cluster info
+		gd.addNode(node.nodeId, node.edges, node.edFeatures);
 
-		// current circles
-		List<Set<Integer>> chat = gd.clusters;
-
-		// add new node to the graph
-		gd.addNode(node);
-
-		// predict the cluster id
-		int c_id = 0;
+		// initial prediction will be that it does not belong to any circle
+		int c_id = -1;
+		// max ll will be for the node not belonging to any circle
+		double max_ll = Snap.logLikelihood(bigThetas, newChat, gd.edgeSet, gd.edgeFeatures);
 		double ll = 0.0;
-		double max_ll = Double.NEGATIVE_INFINITY;
+		
 		for (int k = 0; k < gd.clusters.size(); k++) {
 			// add node ID to cluster i
-			List<Set<Integer>> chat_new = new ArrayList<Set<Integer>>(chat);
-			chat_new.get(k).add(node.nodeId);
+			newChat.get(k).add(node.nodeId);
 
 			// compute log likelihood of this circle assignment
-			ll = Snap.logLikelihood(bigThetas, chat_new, gd.edgeSet, gd.edgeFeatures);
+			ll = Snap.logLikelihood(bigThetas, newChat, gd.edgeSet, gd.edgeFeatures);
 			if (ll > max_ll) {
 				c_id = k;
 				max_ll = ll;
 			}
 			
 			// remove the node from cluster k before next try
-			chat_new.get(k).remove(node.nodeId);
+			newChat.get(k).remove(node.nodeId);
 		}
+		
+		// remove the new node that was added temporarily
+		gd.removeNode(node.nodeId);
 
 		return c_id;
 	}
@@ -266,23 +279,29 @@ public class Snap {
 		for (int i = 0; i < gd.nNodes; i++) {
 			// TODO : can i reuse the same graph object?
 
-			// remove a node
+			// remove a node and its cluster info
 			Node node = gd.removeNode(i);
 
 			// predict which circle the node belongs to
 			int c_id = Snap.whichCircle(gd, node);
 
 			// evaluate the prediction
-			if (node.circles.contains(c_id)) {
+			if ((c_id == -1 && node.circles.size() == 0) || node.circles.contains(c_id)) {
 				correct++;
 				System.out.println("Hurray");
 				System.out.println(node.circles.toString() + c_id);
 			} else {
 				System.out.println("Boooo");
 				System.out.println(node.circles.toString() + c_id);
+				
 			}
+			
+			// add the node and its cluster info back
+			gd.addNode(node.nodeId, node.edges, node.edFeatures);
+			gd.addNodeToCircles(node.nodeId, node.circles);
 
 			System.out.println((float) correct / (i + 1));
+			System.out.println("---------------------------");
 		}
 
 		System.out.println("Accuracy = " + (float) correct / gd.nNodes);
