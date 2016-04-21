@@ -10,8 +10,8 @@ import java.util.Set;
 
 public class Snap {
 
-	static int gradientReps = 50;
-	static int reps = 1; // TODO : do we need the outer rep loop?
+	static int gradientReps = 50; // TODO : experiment
+	static int reps = 10; // TODO : experiment
 	static double lambda = 1.0;
 
 	static List<Integer> whichCircle(Graph gd, Node node) {
@@ -77,15 +77,9 @@ public class Snap {
 		int nEdgeFeatures = gd.nEdgeFeatures;
 		List<Set<Integer>> chat = gd.clusters;
 
-		// this is the output required
-		List<BigTheta> bigThetas = new ArrayList<BigTheta>();
-		for (int i = 0; i < K; i++) {
-			bigThetas.add(new BigTheta(nEdgeFeatures));
-		}
-
 		// log likelihood and its partial derivatives for gradiant ascent
 		double ll_prev;
-		double ll;
+		double ll = Double.NEGATIVE_INFINITY;
 		double[] dlda = new double[K];
 		double[][] dldt = new double[K][nEdgeFeatures];
 
@@ -95,60 +89,69 @@ public class Snap {
 			increment *= 0.5;
 		}
 
+		// the best big theta we are trying to find
+		List<BigTheta> bestBigThetas = null;
+		double bestLl = Double.NEGATIVE_INFINITY;
+		
 		// repetitions
-		// TODO : since we randomly initialize bigtheta, we might want to consider
+		// since we randomly initialize bigtheta, we might want to consider
 		// running gradient ascent more than once and keeping the best bigtheta
-		// for that we must keep a copy of bigtheta and we need a clone()
 		for (int rep = 0; rep < reps; rep++) {
 
+			// this is the output required
+			List<BigTheta> curBigThetas = new ArrayList<BigTheta>();
+			for (int i = 0; i < K; i++) {
+				curBigThetas.add(new BigTheta(nEdgeFeatures));
+			}
+			
 			// randomly initialize the weights
 			Random rand = new Random();
 			for (int k = 0; k < K; k++) {
 				// initialize all theta to 0
 				for (int f = 0; f < gd.nEdgeFeatures; f++) {
-					bigThetas.get(k).theta[f] = 0;
+					curBigThetas.get(k).theta[f] = 0;
 				}
 				// Just set a single feature to 1 as a random initialization.
-				bigThetas.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
+				curBigThetas.get(k).theta[rand.nextInt(gd.nEdgeFeatures)] = 1.0;
 				// this is the random reason for the circle creation
 				// not any of the node feature
-				bigThetas.get(k).theta[0] = 1;
+				curBigThetas.get(k).theta[0] = 1;
 
 				// initialize alpha
-				bigThetas.get(k).alpha = 1;
+				curBigThetas.get(k).alpha = 1;
 			}
 			
 			// log likelihood before starting gradient ascent
-			ll_prev = logLikelihood(bigThetas, chat, gd.edgeSet, gd.edgeFeatures);
+			ll_prev = logLikelihood(curBigThetas, chat, gd.edgeSet, gd.edgeFeatures);
 
 			// gradient ascent
 			for (int iteration = 0; iteration < gradientReps; iteration++) {
 
 				// TODO : full gd?
-				dl(dldt, dlda, K, lambda, gd, bigThetas);
+				dl(dldt, dlda, K, lambda, gd, curBigThetas);
 
 				// update bigtheta using dlda and dldt
 				for (int k = 0; k < K; k++) {
 					for (int f = 0; f < nEdgeFeatures; f++) {
-						bigThetas.get(k).theta[f] += increment * dldt[k][f];
+						curBigThetas.get(k).theta[f] += increment * dldt[k][f];
 					}
 				}
 				for (int k = 0; k < K; k++) {
-					bigThetas.get(k).alpha += increment * dlda[k];
+					curBigThetas.get(k).alpha += increment * dlda[k];
 				}
 
 				// compute new log likelihood
-				ll = logLikelihood(bigThetas, chat, gd.edgeSet, gd.edgeFeatures);
+				ll = logLikelihood(curBigThetas, chat, gd.edgeSet, gd.edgeFeatures);
 
 				// If we reduced the objective, undo the update and stop.
 				if (ll < ll_prev) {
 					for (int k = 0; k < K; k++) {
 						for (int f = 0; f < nEdgeFeatures; f++) {
-							bigThetas.get(k).theta[f] -= increment * dldt[k][f];
+							curBigThetas.get(k).theta[f] -= increment * dldt[k][f];
 						}
 					}
 					for (int k = 0; k < K; k++) {
-						bigThetas.get(k).alpha -= increment * dlda[k];
+						curBigThetas.get(k).alpha -= increment * dlda[k];
 					}
 					ll = ll_prev;
 					break;
@@ -157,9 +160,15 @@ public class Snap {
 				// keep the new likelihood
 				ll_prev = ll;
 			}
+			
+			// after gradient ascent, check if the new LL is better
+			if (ll > bestLl) {
+				bestBigThetas = curBigThetas;
+				bestLl = ll;
+			}
 		}
 
-		return bigThetas;
+		return bestBigThetas;
 	}
 
 	private static void dl(double[][] dldt, double[] dlda, int K, double lambda, Graph gd, List<BigTheta> bigThetas) {

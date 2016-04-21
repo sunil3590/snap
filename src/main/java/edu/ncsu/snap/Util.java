@@ -29,11 +29,10 @@ public class Util {
 	}
 
 	// Inner product
-	// TODO : what is x? may be phi(e)?
-	public static double inp(Map<Integer,Integer> x, double theta[])
+	public static double inp(Map<Integer,Integer> phi, double theta[])
 	{
 		double res = 0;
-		for (Map.Entry<Integer,Integer> entry : x.entrySet()) {
+		for (Map.Entry<Integer,Integer> entry : phi.entrySet()) {
 			res += entry.getValue() * theta[entry.getKey()];
 		}
 		return res;
