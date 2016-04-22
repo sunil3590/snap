@@ -10,16 +10,17 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
+//Building the graph object to contain the ego nodes and their respective ego network
 public class Graph {
 
 	int nNodes;
-	Map<String, Integer> nodeIndex;
-	Map<Integer, String> indexNode;
-	Set<Pair<Integer, Integer>> edgeSet;
-	int nNodeFeatures;
-	int nEdgeFeatures;
-	Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures;
-	List<Set<Integer>> clusters;
+	Map<String, Integer> nodeIndex; //Holds the nodeID to internal nodeID mapping
+	Map<Integer, String> indexNode;  //Holds the reverse nodeID to internal nodeID mapping
+	Set<Pair<Integer, Integer>> edgeSet;  //Holds the edges information of the nodes in the ego network
+	int nNodeFeatures;   //Holds the number of features to represent a node. Varies for different ego node networks
+	int nEdgeFeatures;   //Holds the corresponding number of edge features information in the given ego network
+	Map<Pair<Integer, Integer>, Map<Integer, Integer>> edgeFeatures;  //Holds the similarity metric feature set based on nodes/edges between the different nodes in an ego network
+	List<Set<Integer>> clusters;  //Holds the social circles membership information of all the nodes in an ego network
 	boolean directed;
 
 	public Graph() {
@@ -38,13 +39,13 @@ public class Graph {
 			this.directed = directed;
 			Util util = new Util();
 
-			Map<Integer, List<Integer>> nodeFeatures = new HashMap<Integer, List<Integer>>();
-			Map<Integer, List<Integer>> simFeatures = new HashMap<Integer, List<Integer>>();
+			Map<Integer, List<Integer>> nodeFeatures = new HashMap<Integer, List<Integer>>();  //holds the node features of the nodes in the ego network
+			Map<Integer, List<Integer>> simFeatures = new HashMap<Integer, List<Integer>>();  //holds the similarity metrics between the ego node and the different nodes in the ego network
 
-			List<Integer> selfFeatures;
+			List<Integer> selfFeatures;   //holds the node features of the ego node
 
 			File f = null;
-
+			//Fetching the node features for all the nodes in the ego network
 			File f2 = new File(nodeFeatureFile);
 			if (!f2.exists()) {
 				System.out.println("Couldn't open " + nodeFeatureFile);
@@ -52,7 +53,7 @@ public class Graph {
 			}
 
 			int i = 0;
-
+			//Loading the node features into a graph data structure
 			Scanner sc = new Scanner(f2);
 
 			while (sc.hasNextLine()) {
@@ -63,7 +64,7 @@ public class Graph {
 				if (nodeIndex.containsKey(nodeid)) {
 					System.out.println("Got duplicate feature for " + nodeid);
 				}
-
+				//Remapping the nodeID to an incremental temporary nodeID for easier knowledge representation purpose
 				nodeIndex.put(nodeid, i);
 				indexNode.put(i, nodeid);
 				nNodeFeatures = arr.length - 1;
@@ -77,27 +78,29 @@ public class Graph {
 			}
 
 			nNodes = i;
-
+			//Creating an upper treshold for our system. We cap the ego nodes, with greater than 1000 children nodes in their ego network
 			if (nNodes > 1200) {
 				System.out.println("This code will probably run out of memory with more than 1000 nodes");
 				sc.close();
 				return false;
 			}
 
+			//Fetching the feature set for the ego node
 			f = new File(selfFeatureFile);
-			selfFeatures = new ArrayList<Integer>();
+			selfFeatures = new ArrayList<Integer>(); //Contains the features of the ego node
 			sc.close();
 			sc = new Scanner(f);
 
 			for (int k = 0; k < nNodeFeatures; k++) {
 				selfFeatures.add(sc.nextInt());
 			}
-
+			//computing the similarity metrics between the egonode feature set and the nodes in the network of the ego node
 			for (int k = 0; k < nNodes; k++) {
 				List<Integer> feature = util.diff(selfFeatures, nodeFeatures.get(k), nNodeFeatures);
 				simFeatures.put(k, feature);
 			}
-
+			
+			//Fetching the social circles and the node memberships in different social circles
 			f = new File(clusterFile);
 
 			sc.close();
@@ -126,7 +129,7 @@ public class Graph {
 			if (which.equals("BOTH")) {
 				nEdgeFeatures += nNodeFeatures;
 			}
-
+			//Loading the similarity metrics based on node/edge fetaures between the node members in the ego network
 			for (int m = 0; m < nNodes; m++) {
 				for (int n = (directed ? 0 : m + 1); n < nNodes; n++) {
 					if (m == n)
@@ -148,6 +151,7 @@ public class Graph {
 						list = util.diff(simFeatures.get(m), simFeatures.get(n), nNodeFeatures);
 
 					} else if (which.equals("FRIENDFEATURES")) {
+						//Our system uses the similarity metric based on the node feature set
 						list = util.diff(nodeFeatures.get(m), nodeFeatures.get(n), nNodeFeatures);
 					} else {
 						list = util.diff(simFeatures.get(m), simFeatures.get(n), nNodeFeatures);
@@ -170,7 +174,7 @@ public class Graph {
 			}
 
 			sc.close();
-
+			//Loads the edge information for the given ego network
 			f = new File(edgeFile);
 
 			sc = new Scanner(f);
@@ -186,6 +190,7 @@ public class Graph {
 			return true;
 
 		} catch (Exception ex) {
+			//display any exceptions
 			System.out.println(ex.getMessage());
 			return false;
 		}
@@ -193,7 +198,7 @@ public class Graph {
 	}
 
 	public Node removeNode(int nodeid) {
-
+		//To facilitate the removal of a node from the ego network
 		Node node = new Node();
 
 		node.nodeId = nodeid;
@@ -247,7 +252,7 @@ public class Graph {
 
 	// circle info of node is not added here
 	public void addNode(Node node) {
-
+	// To facilitate the addition of a node into the ego network
 		for (int cId : node.circles) {
 			clusters.get(cId).add(node.nodeId);
 		}
@@ -264,6 +269,7 @@ public class Graph {
 	}
 
 	public static void main(String[] args) {
+		//A simple unit testing block.
 		try {
 			Graph graph = new Graph();
 
