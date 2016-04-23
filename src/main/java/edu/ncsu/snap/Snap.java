@@ -291,7 +291,7 @@ public class Snap {
 			return;
 		}
 
-		System.out.println("********************************");
+		System.out.println("\n********************************");
 		System.out.println("*** Running for ego node " + args[0] + " ***");
 		System.out.println("********************************\n");
 		
@@ -301,9 +301,9 @@ public class Snap {
 		int fp = 0;
 		int fn = 0;
 		
-		System.out.println("---------------------------------------");
-		System.out.println("- Performing leave one out evaluation -");
-		System.out.println("---------------------------------------\n");
+		System.out.println("***************************************");
+		System.out.println("* Performing leave one out evaluation *");
+		System.out.println("***************************************");
 		
 		// leave one out evaluation
 		for (int i = 0; i < gd.nNodes; i++) {
@@ -348,7 +348,7 @@ public class Snap {
 			float recall = (float) tp / (tp + fn);
 			float accuracy = (float) (tp + tn) / (tp + fp + tn + fn);
 			float fMeasure = 2 * precision * recall / (precision + recall);
-			System.out.println("----------- Metrics so far ------------");
+			System.out.println("-------     Metrics so far     --------");
 			System.out.println("True Circles " + trueCircles.toString());
 			System.out.println("Predicted Circles " + predCircles.toString());
 			System.out.println("Precision  = " + String.format("%.2f", precision));
@@ -356,7 +356,7 @@ public class Snap {
 			System.out.println("Accuracy   = " + String.format("%.2f", accuracy));
 			System.out.println("F-Measure  = " + String.format("%.2f", fMeasure));
 			System.out.println(String.format("%.2f", (float) (i + 1) / gd.nNodes * 100) + "% complete");
-			System.out.println("---------------------------------------\n");
+			System.out.println("***************************************\n");
 		}
 		
 		// print end time

@@ -1,5 +1,5 @@
 # snap
-Implementation of Stanford's SNAP algorithm
+Given a ego network of a Facebook user, find the social circles a new friend belongs to
 
 ### Paper
 * https://cs.stanford.edu/people/jure/pubs/circles-tkdd14.pdf
@@ -7,3 +7,6 @@ Implementation of Stanford's SNAP algorithm
 
 ### Dataset
 http://snap.stanford.edu/data/
+
+### To run
+`mvn compile exec:java`
