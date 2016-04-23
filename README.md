@@ -22,3 +22,7 @@ To evaluate, we use leave one out methodology.
 
 ### To run
 `mvn compile exec:java`
+
+### Tools needed
+* JDK
+* Maven `sudo apt-get install maven`
