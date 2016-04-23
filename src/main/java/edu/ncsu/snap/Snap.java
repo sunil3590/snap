@@ -10,8 +10,8 @@ import java.util.Set;
 
 public class Snap {
 
-	static int gradientReps = 50; // TODO : experiment
-	static int reps = 10; // TODO : experiment
+	static int gradientReps = 50;
+	static int reps = 1;
 	static double lambda = 1.0;
 
 	static List<Integer> whichCircle(Graph gd, Node node) {
@@ -65,6 +65,8 @@ public class Snap {
 
 		// remove the new node that was added temporarily
 		gd.removeNode(node.nodeId);
+		
+		System.out.println("Log Likelihood after adding new node = " + max_ll);
 
 		return predCID;
 	}
@@ -167,6 +169,8 @@ public class Snap {
 				bestLl = ll;
 			}
 		}
+		
+		System.out.println("Log Likelihood before adding new node = " + bestLl);
 
 		return bestBigThetas;
 	}
@@ -269,7 +273,6 @@ public class Snap {
 
 		// print start time
 		System.out.println("Started at " + new Date().toString());
-		System.out.println("---------------------------");
 		
 		// input data to be used for analysis
 		String filePrefix = "./data/facebook/" + args[0];
@@ -288,12 +291,24 @@ public class Snap {
 			return;
 		}
 
+		System.out.println("********************************");
+		System.out.println("*** Running for ego node " + args[0] + " ***");
+		System.out.println("********************************\n");
+		
+		// performance metrics
 		int tp = 0;
 		int tn = 0;
 		int fp = 0;
 		int fn = 0;
+		
+		System.out.println("---------------------------------------");
+		System.out.println("- Performing leave one out evaluation -");
+		System.out.println("---------------------------------------\n");
+		
+		// leave one out evaluation
 		for (int i = 0; i < gd.nNodes; i++) {
 			// remove a node and its cluster info from the full graph
+			System.out.println("# " + (i + 1) + "/" + gd.nNodes);
 			System.out.println("Predicting circles for node " + gd.indexNode.get(i));
 			Node node = gd.removeNode(i);
 			List<Integer> trueCircles = node.circles;
@@ -333,14 +348,15 @@ public class Snap {
 			float recall = (float) tp / (tp + fn);
 			float accuracy = (float) (tp + tn) / (tp + fp + tn + fn);
 			float fMeasure = 2 * precision * recall / (precision + recall);
+			System.out.println("----------- Metrics so far ------------");
 			System.out.println("True Circles " + trueCircles.toString());
 			System.out.println("Predicted Circles " + predCircles.toString());
-			System.out.println("Precision  = " + precision);
-			System.out.println("Recall     = " + recall);
-			System.out.println("Accuracy   = " + accuracy);
-			System.out.println("F-Measure  = " + fMeasure);
-			System.out.println("% complete = " + (float) (i + 1) / gd.nNodes * 100 + "%");
-			System.out.println("---------------------------");
+			System.out.println("Precision  = " + String.format("%.2f", precision));
+			System.out.println("Recall     = " + String.format("%.2f", recall));
+			System.out.println("Accuracy   = " + String.format("%.2f", accuracy));
+			System.out.println("F-Measure  = " + String.format("%.2f", fMeasure));
+			System.out.println(String.format("%.2f", (float) (i + 1) / gd.nNodes * 100) + "% complete");
+			System.out.println("---------------------------------------\n");
 		}
 		
 		// print end time
