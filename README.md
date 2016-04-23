@@ -8,5 +8,17 @@ Given a ego network of a Facebook user, find the social circles a new friend bel
 ### Dataset
 http://snap.stanford.edu/data/
 
+### Algorithm
+Goal is to predict the social cirlces to which a new facebook friend belongs to
+1. Compute alpha and theta which explains the existing friends and their circles
+	* Use gradient ascent with log likelihood function as cost
+2. Assign the new friend to all combinations of circles and keep the assignment that gives the maximum log likelihood
+
+### Evaluation
+To evaluate, we use leave one out methodology.
+* Precision = ~24%
+* Recall = ~86%
+* Accuracy = ~72%
+
 ### To run
 `mvn compile exec:java`
