@@ -10,9 +10,9 @@ http://snap.stanford.edu/data/
 
 ### Algorithm
 Goal is to predict the social cirlces to which a new facebook friend belongs to
-1. Compute alpha and theta which explains the existing friends and their circles
-	* Use gradient ascent with log likelihood function as cost
-2. Assign the new friend to all combinations of circles and keep the assignment that gives the maximum log likelihood
+* Compute alpha and theta which explains the existing friends and their circles
+ * Use gradient ascent with log likelihood function as cost
+* Assign the new friend to all combinations of circles and keep the assignment that gives the maximum log likelihood
 
 ### Evaluation
 To evaluate, we use leave one out methodology.
